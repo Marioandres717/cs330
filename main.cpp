@@ -5,12 +5,12 @@ int main()
     string tokens[MAX_COMMAND_LINE_ARGUMENTS];
     int tokenCount;
     int commandCounter = 1;
-    string history[MAX_HISTORY_COMMANDS];
+    vector<string> history;
 
     do
     {
         tokenCount = GetCommand(tokens, commandCounter);
-    } while (ProcessCommand(tokens, tokenCount));
+    } while (ProcessCommand(tokens, tokenCount, history));
 
     return 0;
 }

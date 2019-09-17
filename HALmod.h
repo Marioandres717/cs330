@@ -21,6 +21,7 @@ const vector<string> TERMINATING_COMMANDS{
     "restart",
     "stop",
     "exit",
+    "quit",
 };
 
 const vector<string> SHELL_COMMANDS{
@@ -31,7 +32,9 @@ const vector<string> SHELL_COMMANDS{
 
 int GetCommand(string tokens[], int &commandCounter);
 int TokenizeCommandLine(string tokens[], string commandLine);
-int ProcessCommand(string tokens[], int tokenCount);
+int ProcessCommand(string tokens[], int tokenCount, vector<string> &history);
 void PrintCommandPrompt(int commandCounter);
 void WriteToFile(string filename, string input);
-int Ignore();
+void PrintHistory(vector<string> &history);
+void AddToHistory(string commandToAdd, vector<string> &history);
+string ReconstructCommand(string tokens[], int tokenCount);

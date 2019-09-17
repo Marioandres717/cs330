@@ -92,13 +92,16 @@ int TokenizeCommandLine(string tokens[], string commandLine)
     return tokenCount;
 }
 
-int ProcessCommand(string tokens[], int tokenCount)
+int ProcessCommand(string tokens[], int tokenCount, vector<string> &history)
 {
     auto isATerminatingCommand = find(begin(TERMINATING_COMMANDS), end(TERMINATING_COMMANDS), tokens[0]);
     if (isATerminatingCommand == end(TERMINATING_COMMANDS))
     {
-        auto isAShellCommand = find(begin(SHELL_COMMANDS), end(SHELL_COMMANDS), tokens[0]);
         // Add command to history
+        string commandString = ReconstructCommand(tokens, tokenCount);
+        AddToHistory(commandString, history);
+
+        auto isAShellCommand = find(begin(SHELL_COMMANDS), end(SHELL_COMMANDS), tokens[0]);
         if (isAShellCommand != end(SHELL_COMMANDS))
         {
             if (tokenCount > 1)
@@ -114,8 +117,9 @@ int ProcessCommand(string tokens[], int tokenCount)
             }
             else
             {
-                if (tokens[0] == SHELL_COMMANDS[3])
+                if (tokens[0] == SHELL_COMMANDS[2])
                 {
+                    PrintHistory(history);
                     return 1;
                 }
             }
@@ -134,10 +138,38 @@ int ProcessCommand(string tokens[], int tokenCount)
     }
 }
 
+void AddToHistory(string commandToAdd, vector<string> &history)
+{
+    if (history.size() == MAX_HISTORY_COMMANDS)
+    {
+        history.erase(history.begin());
+    }
+    history.push_back(commandToAdd);
+}
+
+void PrintHistory(vector<string> &history)
+{
+    for (int i = 0; i < history.size(); i++)
+    {
+        int temp = i + 1;
+        cout << temp << " " << history[i] << endl;
+    }
+}
+
 void WriteToFile(string filename, string input)
 {
     ofstream newfile;
     newfile.open(filename, ios::out | ios::trunc);
     newfile << input.append("\n");
     newfile.close();
+}
+
+string ReconstructCommand(string tokens[], int tokenCount)
+{
+    string command = "";
+    for (int i = 0; i < tokenCount; i++)
+    {
+        command.append(tokens[i] + " ");
+    }
+    return command;
 }
