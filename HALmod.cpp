@@ -142,7 +142,10 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
                 if (tokens[0] == SHELL_COMMANDS[2])
                 {
                     PrintHistory(history);
-                    return 1;
+                }
+                else if (tokens[0] == SHELL_COMMANDS[5])
+                {
+                    PrintAliases(aliases);
                 }
             }
             return 1;
@@ -212,13 +215,12 @@ bool inRange(unsigned low, unsigned high, unsigned x)
 
 void AddToAliases(string newName, string oldName, map<string, string> &aliases)
 {
-    if (aliases.size() <= 10)
+    if (aliases.size() <= MAX_ALIASES)
     {
         pair<map<string, string>::iterator, bool> ret;
         ret = aliases.insert(pair<string, string>(newName, oldName));
         if (ret.second == false)
         {
-            cout << "ALREADT CREATED ALIAS" << endl;
             aliases.erase(newName);
             aliases.insert(pair<string, string>(newName, oldName));
         }
@@ -232,5 +234,14 @@ void RemoveFromAliases(string aliasToRemove, map<string, string> &aliases)
     if (it != aliases.end())
     {
         aliases.erase(aliasToRemove);
+    }
+}
+
+void PrintAliases(map<string, string> &aliases)
+{
+    map<string, string>::iterator it;
+    for (it = aliases.begin(); it != aliases.end(); ++it)
+    {
+        cout << it->first << " => " << it->second << "\n";
     }
 }

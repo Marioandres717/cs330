@@ -34,6 +34,7 @@ const vector<string> SHELL_COMMANDS{
     "history",
     "!",
     "newname",
+    "newnames",
 };
 
 int GetCommand(string tokens[], int &commandCounter);
@@ -48,3 +49,4 @@ bool isNumber(string tokenString);
 bool inRange(unsigned low, unsigned high, unsigned x);
 void AddToAliases(string newName, string oldName, map<string, string> &aliases);
 void RemoveFromAliases(string aliasToRemove, map<string, string> &aliases);
+void PrintAliases(map<string, string> &aliases);
