@@ -1,18 +1,19 @@
 #include "HALmod.h"
 #include <cstring>
 
-int GetCommand(string tokens[], int &commandCounter, string &terminator)
+int GetCommand(string tokens[], int &commandCounter)
 {
     string commandLine;
     int tokenCount;
+
     do
     {
-        cout << "toyshell[" << commandCounter << "]" << terminator;
+        PrintCommandPrompt(commandCounter);
         while (1)
         {
             getline(cin, commandLine);
             tokenCount = TokenizeCommandLine(tokens, commandLine);
-            if (tokenCount)
+            if (tokenCount > 0)
             {
                 commandCounter++;
                 break;
@@ -22,6 +23,39 @@ int GetCommand(string tokens[], int &commandCounter, string &terminator)
     } while (commandLine.length() == 0);
 
     return tokenCount;
+}
+
+void PrintCommandPrompt(int commandCounter)
+{
+    string terminator;
+    string shellName;
+    ifstream shellNameFile("shellname.txt");
+    ifstream terminatorFile("terminator.txt");
+    if (shellNameFile.is_open())
+    {
+        getline(shellNameFile, shellName);
+    }
+    else
+    {
+        ofstream outShellNameFile("shellname.txt");
+        outShellNameFile << "toyshell\n";
+        shellName = "toyshell";
+        outShellNameFile.close();
+    }
+
+    if (terminatorFile.is_open())
+    {
+        getline(terminatorFile, terminator);
+    }
+    else
+    {
+        ofstream outTerminatorFile("terminator.txt");
+        outTerminatorFile << ">\n";
+        terminator = ">";
+        outTerminatorFile.close();
+    }
+
+    cout << shellName << "[" << commandCounter << "]" << terminator << " ";
 }
 
 int TokenizeCommandLine(string tokens[], string commandLine)
@@ -53,7 +87,6 @@ int TokenizeCommandLine(string tokens[], string commandLine)
     }
 
     delete[] workCommandLine;
-    cout << tokenCount << endl;
 
     return tokenCount;
 }
@@ -63,7 +96,6 @@ int ProcessCommand(string tokens[], int tokenCount)
     auto isATerminatingCommand = find(begin(TERMINATING_COMMANDS), end(TERMINATING_COMMANDS), tokens[0]);
     if (isATerminatingCommand == end(TERMINATING_COMMANDS))
     {
-        cout << tokenCount << endl;
         if (tokenCount > 1)
         {
             cout << "HALshell: " << tokens[0] << " does not require any arguments" << endl;
@@ -76,13 +108,5 @@ int ProcessCommand(string tokens[], int tokenCount)
         cout << endl;
         cout << "toyshell terminating ..." << endl;
         return 0;
-    }
-}
-
-void PrintReverse(char **cTokens, int tokenCount)
-{
-    for (int i = tokenCount - 1; i >= 0; i--)
-    {
-        cout << cTokens[i] << endl;
     }
 }

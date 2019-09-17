@@ -9,11 +9,10 @@ int main()
     string tokens[MAX_COMMAND_LINE_ARGUMENTS];
     int tokenCount;
     int commandCounter = 1;
-    string terminator = ">";
 
     do
     {
-        tokenCount = GetCommand(tokens, commandCounter, terminator);
+        tokenCount = GetCommand(tokens, commandCounter);
     } while (ProcessCommand(tokens, tokenCount));
 
     return 0;

@@ -7,6 +7,7 @@
 #include <iterator>
 #include <algorithm>
 #include <vector>
+#include <cstdlib>
 
 using namespace std;
 
@@ -19,9 +20,9 @@ const vector<string> TERMINATING_COMMANDS{
     "stop",
     "exit"};
 
-int GetCommand(string tokens[], int &commandCounter, string &terminator);
+int GetCommand(string tokens[], int &commandCounter);
+void PrintCommandPrompt(int commandCounter);
 int TokenizeCommandLine(string tokens[], string commandLine);
-// bool CheckForCommand();
 int ProcessCommand(string tokens[], int tokenCount);
 
 static volatile sig_atomic_t cullProcess = 0;
