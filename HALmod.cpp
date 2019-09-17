@@ -92,7 +92,7 @@ int TokenizeCommandLine(string tokens[], string commandLine)
     return tokenCount;
 }
 
-int ProcessCommand(string tokens[], int tokenCount, vector<string> &history)
+int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map<string, string> &aliases)
 {
     auto isATerminatingCommand = find(begin(TERMINATING_COMMANDS), end(TERMINATING_COMMANDS), tokens[0]);
     if (isATerminatingCommand == end(TERMINATING_COMMANDS))
@@ -114,13 +114,8 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history)
                 {
                     WriteToFile("terminator.txt", tokens[1]);
                 }
-                else if (tokens[0] == SHELL_COMMANDS[3] && tokens[1] == "|")
+                else if (tokens[0] == SHELL_COMMANDS[3] && tokens[1] == "|" && !tokens[2].empty())
                 {
-                    if (tokens[2] == "")
-                    {
-                        return 1;
-                    }
-
                     if (isNumber(tokens[2]))
                     {
                         int index = stoi(tokens[2]);
@@ -128,6 +123,17 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history)
                         {
                             cout << history[index] << endl;
                         }
+                    }
+                }
+                else if (tokens[0] == SHELL_COMMANDS[4] && !tokens[1].empty())
+                {
+                    if (tokens[2].empty())
+                    {
+                        RemoveFromAliases(tokens[1], aliases);
+                    }
+                    else if (tokens[2] == "|" && !tokens[3].empty())
+                    {
+                        AddToAliases(tokens[1], tokens[3], aliases);
                     }
                 }
             }
@@ -202,4 +208,29 @@ bool isNumber(string tokenString)
 bool inRange(unsigned low, unsigned high, unsigned x)
 {
     return ((x - low) <= (high - low));
+}
+
+void AddToAliases(string newName, string oldName, map<string, string> &aliases)
+{
+    if (aliases.size() <= 10)
+    {
+        pair<map<string, string>::iterator, bool> ret;
+        ret = aliases.insert(pair<string, string>(newName, oldName));
+        if (ret.second == false)
+        {
+            cout << "ALREADT CREATED ALIAS" << endl;
+            aliases.erase(newName);
+            aliases.insert(pair<string, string>(newName, oldName));
+        }
+    }
+}
+
+void RemoveFromAliases(string aliasToRemove, map<string, string> &aliases)
+{
+    map<string, string>::iterator it;
+    it = aliases.find(aliasToRemove);
+    if (it != aliases.end())
+    {
+        aliases.erase(aliasToRemove);
+    }
 }

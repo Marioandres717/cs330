@@ -11,11 +11,14 @@
 #include <exception>
 #include <string>
 #include <cctype>
+#include <map>
+#include <utility>
 
 using namespace std;
 
 const int MAX_COMMAND_LINE_ARGUMENTS = 8;
 const int MAX_HISTORY_COMMANDS = 10;
+const int MAX_ALIASES = 10;
 const int SLEEP_DELAY = 100000;
 const vector<string> TERMINATING_COMMANDS{
     "shutdown",
@@ -35,7 +38,7 @@ const vector<string> SHELL_COMMANDS{
 
 int GetCommand(string tokens[], int &commandCounter);
 int TokenizeCommandLine(string tokens[], string commandLine);
-int ProcessCommand(string tokens[], int tokenCount, vector<string> &history);
+int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map<string, string> &aliases);
 void PrintCommandPrompt(int commandCounter);
 void WriteToFile(string filename, string input);
 void PrintHistory(vector<string> &history);
@@ -43,3 +46,5 @@ void AddToHistory(string commandToAdd, vector<string> &history);
 string ReconstructCommand(string tokens[], int tokenCount);
 bool isNumber(string tokenString);
 bool inRange(unsigned low, unsigned high, unsigned x);
+void AddToAliases(string newName, string oldName, map<string, string> &aliases);
+void RemoveFromAliases(string aliasToRemove, map<string, string> &aliases);

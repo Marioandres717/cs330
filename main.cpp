@@ -6,11 +6,12 @@ int main()
     int tokenCount;
     int commandCounter = 1;
     vector<string> history;
+    map<string, string> aliases;
 
     do
     {
         tokenCount = GetCommand(tokens, commandCounter);
-    } while (ProcessCommand(tokens, tokenCount, history));
+    } while (ProcessCommand(tokens, tokenCount, history, aliases));
 
     return 0;
 }
