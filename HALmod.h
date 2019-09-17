@@ -8,21 +8,30 @@
 #include <algorithm>
 #include <vector>
 #include <cstdlib>
+#include <exception>
+#include <string>
 
 using namespace std;
 
-//The following two lines come from HALglobals.h
 const int MAX_COMMAND_LINE_ARGUMENTS = 8;
+const int MAX_HISTORY_COMMANDS = 10;
 const int SLEEP_DELAY = 100000;
 const vector<string> TERMINATING_COMMANDS{
     "shutdown",
     "restart",
     "stop",
-    "exit"};
+    "exit",
+};
+
+const vector<string> SHELL_COMMANDS{
+    "setshellname",
+    "setterminator",
+    "history",
+};
 
 int GetCommand(string tokens[], int &commandCounter);
-void PrintCommandPrompt(int commandCounter);
 int TokenizeCommandLine(string tokens[], string commandLine);
 int ProcessCommand(string tokens[], int tokenCount);
-
-static volatile sig_atomic_t cullProcess = 0;
+void PrintCommandPrompt(int commandCounter);
+void WriteToFile(string filename, string input);
+int Ignore();

@@ -29,6 +29,7 @@ void PrintCommandPrompt(int commandCounter)
 {
     string terminator;
     string shellName;
+    // Look for files created
     ifstream shellNameFile("shellname.txt");
     ifstream terminatorFile("terminator.txt");
     if (shellNameFile.is_open())
@@ -37,11 +38,12 @@ void PrintCommandPrompt(int commandCounter)
     }
     else
     {
-        ofstream outShellNameFile("shellname.txt");
-        outShellNameFile << "toyshell\n";
+        // if they aren't created. create output file
         shellName = "toyshell";
-        outShellNameFile.close();
+        WriteToFile("shellname.txt", "toyshell");
     }
+
+    // Two separate files are created for each property
 
     if (terminatorFile.is_open())
     {
@@ -49,12 +51,11 @@ void PrintCommandPrompt(int commandCounter)
     }
     else
     {
-        ofstream outTerminatorFile("terminator.txt");
-        outTerminatorFile << ">\n";
         terminator = ">";
-        outTerminatorFile.close();
+        WriteToFile("terminator.txt", ">");
     }
 
+    // print command prompt
     cout << shellName << "[" << commandCounter << "]" << terminator << " ";
 }
 
@@ -96,12 +97,34 @@ int ProcessCommand(string tokens[], int tokenCount)
     auto isATerminatingCommand = find(begin(TERMINATING_COMMANDS), end(TERMINATING_COMMANDS), tokens[0]);
     if (isATerminatingCommand == end(TERMINATING_COMMANDS))
     {
-        if (tokenCount > 1)
+        auto isAShellCommand = find(begin(SHELL_COMMANDS), end(SHELL_COMMANDS), tokens[0]);
+        // Add command to history
+        if (isAShellCommand != end(SHELL_COMMANDS))
         {
-            cout << "HALshell: " << tokens[0] << " does not require any arguments" << endl;
+            if (tokenCount > 1)
+            {
+                if (tokens[0] == SHELL_COMMANDS[0])
+                {
+                    WriteToFile("shellname.txt", tokens[1]);
+                }
+                else if (tokens[0] == SHELL_COMMANDS[1])
+                {
+                    WriteToFile("terminator.txt", tokens[1]);
+                }
+            }
+            else
+            {
+                if (tokens[0] == SHELL_COMMANDS[3])
+                {
+                    return 1;
+                }
+            }
             return 1;
         }
-        return 1;
+        else
+        {
+            return 1;
+        }
     }
     else
     {
@@ -109,4 +132,12 @@ int ProcessCommand(string tokens[], int tokenCount)
         cout << "toyshell terminating ..." << endl;
         return 0;
     }
+}
+
+void WriteToFile(string filename, string input)
+{
+    ofstream newfile;
+    newfile.open(filename, ios::out | ios::trunc);
+    newfile << input.append("\n");
+    newfile.close();
 }
