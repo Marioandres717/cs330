@@ -114,6 +114,22 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history)
                 {
                     WriteToFile("terminator.txt", tokens[1]);
                 }
+                else if (tokens[0] == SHELL_COMMANDS[3] && tokens[1] == "|")
+                {
+                    if (tokens[2] == "")
+                    {
+                        return 1;
+                    }
+
+                    if (isNumber(tokens[2]))
+                    {
+                        int index = stoi(tokens[2]);
+                        if (inRange(0, MAX_HISTORY_COMMANDS, index))
+                        {
+                            cout << history[index] << endl;
+                        }
+                    }
+                }
             }
             else
             {
@@ -172,4 +188,18 @@ string ReconstructCommand(string tokens[], int tokenCount)
         command.append(tokens[i] + " ");
     }
     return command;
+}
+
+bool isNumber(string tokenString)
+{
+    for (int i = 0; i < tokenString.length(); i++)
+        if (isdigit(tokenString[i]) == false)
+            return false;
+
+    return true;
+}
+
+bool inRange(unsigned low, unsigned high, unsigned x)
+{
+    return ((x - low) <= (high - low));
 }

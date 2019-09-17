@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <exception>
 #include <string>
+#include <cctype>
 
 using namespace std;
 
@@ -28,6 +29,8 @@ const vector<string> SHELL_COMMANDS{
     "setshellname",
     "setterminator",
     "history",
+    "!",
+    "newname",
 };
 
 int GetCommand(string tokens[], int &commandCounter);
@@ -38,3 +41,5 @@ void WriteToFile(string filename, string input);
 void PrintHistory(vector<string> &history);
 void AddToHistory(string commandToAdd, vector<string> &history);
 string ReconstructCommand(string tokens[], int tokenCount);
+bool isNumber(string tokenString);
+bool inRange(unsigned low, unsigned high, unsigned x);
