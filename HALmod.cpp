@@ -133,8 +133,24 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
                     }
                     else if (tokens[2] == "|" && !tokens[3].empty())
                     {
-                        AddToAliases(tokens[1], tokens[3], aliases);
+                        string oldName = "";
+                        string newName = tokens[1];
+                        for (int i = 3; i < tokenCount; ++i)
+                        {
+                            oldName.append(tokens[i] + " ");
+                        }
+                        AddToAliases(newName, oldName, aliases);
                     }
+                }
+                else if (tokens[0] == SHELL_COMMANDS[6] && !tokens[1].empty())
+                {
+                    string filename = tokens[1];
+                    SaveAliasesToFile(filename, aliases);
+                }
+                else if (tokens[0] == SHELL_COMMANDS[7] && !tokens[1].empty())
+                {
+                    string filename = tokens[1];
+                    ReadNewNames(filename, aliases);
                 }
             }
             else
@@ -150,8 +166,17 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
             }
             return 1;
         }
-        else
+        else if (CheckIfCommandInAliases(tokens[0], aliases))
         {
+            // alias command
+            string oldName = aliases.find(tokens[0])->second;
+            cout <<  oldName << endl;
+            tokenCount = TokenizeCommandLine(tokens, oldName);
+            ProcessCommand(tokens, tokenCount, history, aliases);
+            return 1;
+        } else {
+            // linux command
+            cout << "linux command!" << endl;
             return 1;
         }
     }
@@ -244,4 +269,52 @@ void PrintAliases(map<string, string> &aliases)
     {
         cout << it->first << " => " << it->second << "\n";
     }
+}
+
+void SaveAliasesToFile(string filename, map<string, string> &aliases)
+{
+    ofstream newfile;
+    newfile.open(filename, ios::out | ios::trunc);
+    map<string, string>::iterator it;
+    string delimiter = ":";
+    for (it = aliases.begin(); it != aliases.end(); ++it)
+    {
+        newfile << it->first << delimiter << it->second << "\n";
+    }
+    newfile.close();
+}
+
+void ReadNewNames(string filename, map<string, string> &aliases)
+{
+    ifstream file;
+    string alias;
+    string tokens[MAX_COMMAND_LINE_ARGUMENTS];
+    file.open(filename);
+    if (file.is_open())
+    {
+        while (getline(file, alias))
+        {
+            ParseAliasFile(tokens, alias);
+            pair<map<string, string>::iterator, bool> ret;
+            ret = aliases.insert(pair<string, string>(tokens[0], tokens[1]));
+        }
+    }
+}
+
+void ParseAliasFile(string tokens[], string alias)
+{
+    string delimiter = ":";
+    string key = alias.substr(0, alias.find(delimiter));
+    string value = alias.substr(alias.find(delimiter) + 1, alias.length());
+    tokens[0] = key;
+    tokens[1] = value;
+}
+
+bool CheckIfCommandInAliases(string alias, map<string, string> &aliases) {
+    map<string, string>::iterator it;
+    it = aliases.find(alias);
+    if (it != aliases.end()) {
+        return true;
+    }
+    return false;
 }

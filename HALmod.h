@@ -35,6 +35,8 @@ const vector<string> SHELL_COMMANDS{
     "!",
     "newname",
     "newnames",
+    "savenewnames",
+    "readnewnames",
 };
 
 int GetCommand(string tokens[], int &commandCounter);
@@ -50,3 +52,7 @@ bool inRange(unsigned low, unsigned high, unsigned x);
 void AddToAliases(string newName, string oldName, map<string, string> &aliases);
 void RemoveFromAliases(string aliasToRemove, map<string, string> &aliases);
 void PrintAliases(map<string, string> &aliases);
+void SaveAliasesToFile(string filename, map<string, string> &aliases);
+void ReadNewNames(string filename, map<string, string> &aliases);
+void ParseAliasFile(string tokens[], string alias);
+bool CheckIfCommandInAliases(string alias, map<string, string> &aliases);
