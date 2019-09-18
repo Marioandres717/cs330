@@ -261,6 +261,8 @@ void AddToAliases(string newName, string oldName, map<string, string> &aliases)
             aliases.erase(newName);
             aliases.insert(pair<string, string>(newName, oldName));
         }
+    } else {
+        cout << "Max Number of aliases reached" << endl;
     }
 }
 
