@@ -56,3 +56,4 @@ void SaveAliasesToFile(string filename, map<string, string> &aliases);
 void ReadNewNames(string filename, map<string, string> &aliases);
 void ParseAliasFile(string tokens[], string alias);
 bool CheckIfCommandInAliases(string alias, map<string, string> &aliases);
+void OsCommand(string command);

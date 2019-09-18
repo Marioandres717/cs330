@@ -101,19 +101,23 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
         string commandString = ReconstructCommand(tokens, tokenCount);
         AddToHistory(commandString, history);
 
+        // check if command is a predefined shell command
         auto isAShellCommand = find(begin(SHELL_COMMANDS), end(SHELL_COMMANDS), tokens[0]);
         if (isAShellCommand != end(SHELL_COMMANDS))
         {
             if (tokenCount > 1)
             {
+                // SET SHELLNAME
                 if (tokens[0] == SHELL_COMMANDS[0])
                 {
                     WriteToFile("shellname.txt", tokens[1]);
                 }
+                // SET TERMINATOR
                 else if (tokens[0] == SHELL_COMMANDS[1])
                 {
                     WriteToFile("terminator.txt", tokens[1]);
                 }
+                // execute command in history (! | [n])
                 else if (tokens[0] == SHELL_COMMANDS[3] && tokens[1] == "|" && !tokens[2].empty())
                 {
                     if (isNumber(tokens[2]))
@@ -121,32 +125,36 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
                         int index = stoi(tokens[2]);
                         if (inRange(0, MAX_HISTORY_COMMANDS, index))
                         {
-                            cout << history[index] << endl;
+                            tokenCount = TokenizeCommandLine(tokens, history[index]);
+                            ProcessCommand(tokens, tokenCount, history, aliases);
                         }
                     }
                 }
+                // NEW NAME
                 else if (tokens[0] == SHELL_COMMANDS[4] && !tokens[1].empty())
                 {
                     if (tokens[2].empty())
                     {
                         RemoveFromAliases(tokens[1], aliases);
                     }
-                    else if (tokens[2] == "|" && !tokens[3].empty())
+                    else
                     {
                         string oldName = "";
                         string newName = tokens[1];
-                        for (int i = 3; i < tokenCount; ++i)
+                        for (int i = 2; i < tokenCount; ++i)
                         {
                             oldName.append(tokens[i] + " ");
                         }
                         AddToAliases(newName, oldName, aliases);
                     }
                 }
+                // SAVE NEW NAMES
                 else if (tokens[0] == SHELL_COMMANDS[6] && !tokens[1].empty())
                 {
                     string filename = tokens[1];
                     SaveAliasesToFile(filename, aliases);
                 }
+                // READ NEW NAMES
                 else if (tokens[0] == SHELL_COMMANDS[7] && !tokens[1].empty())
                 {
                     string filename = tokens[1];
@@ -155,10 +163,12 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
             }
             else
             {
+                // HISTORY
                 if (tokens[0] == SHELL_COMMANDS[2])
                 {
                     PrintHistory(history);
                 }
+                // NEW NAMES
                 else if (tokens[0] == SHELL_COMMANDS[5])
                 {
                     PrintAliases(aliases);
@@ -170,13 +180,16 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
         {
             // alias command
             string oldName = aliases.find(tokens[0])->second;
-            cout <<  oldName << endl;
+            // replace alias command;
+            tokens[0] = oldName;
+            oldName = ReconstructCommand(tokens, tokenCount);
             tokenCount = TokenizeCommandLine(tokens, oldName);
             ProcessCommand(tokens, tokenCount, history, aliases);
             return 1;
         } else {
-            // linux command
-            cout << "linux command!" << endl;
+            // OS command
+            string command = ReconstructCommand(tokens, tokenCount);
+            OsCommand(command);
             return 1;
         }
     }
@@ -201,8 +214,7 @@ void PrintHistory(vector<string> &history)
 {
     for (int i = 0; i < history.size(); i++)
     {
-        int temp = i + 1;
-        cout << temp << " " << history[i] << endl;
+        cout << i << " " << history[i] << endl;
     }
 }
 
@@ -317,4 +329,9 @@ bool CheckIfCommandInAliases(string alias, map<string, string> &aliases) {
         return true;
     }
     return false;
+}
+
+void OsCommand(string command) {
+    const char *c = command.c_str();
+    system(c);
 }
