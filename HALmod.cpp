@@ -1,6 +1,7 @@
 #include "HALmod.h"
 #include <cstring>
 
+// Read Command from shell
 int GetCommand(string tokens[], int &commandCounter)
 {
     string commandLine;
@@ -58,7 +59,7 @@ void PrintCommandPrompt(int commandCounter)
     // print command prompt
     cout << shellName << "[" << commandCounter << "]" << terminator << " ";
 }
-
+// Tokenizer function from DR.Hilderman
 int TokenizeCommandLine(string tokens[], string commandLine)
 {
     char *token[MAX_COMMAND_LINE_ARGUMENTS];
@@ -118,7 +119,7 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
                     WriteToFile("terminator.txt", tokens[1]);
                 }
                 // execute command in history (! | [n])
-                else if (tokens[0] == SHELL_COMMANDS[3] && tokens[1] == "|" && !tokens[2].empty())
+                else if (tokens[0] == SHELL_COMMANDS[3] && tokens[1] == PIPE_OPERATOR && !tokens[2].empty())
                 {
                     if (isNumber(tokens[2]))
                     {
@@ -161,6 +162,7 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
                     ReadNewNames(filename, aliases);
                 }
             }
+            // single token commands
             else
             {
                 // HISTORY
@@ -176,18 +178,18 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
             }
             return 1;
         }
+        // alias commands
         else if (CheckIfCommandInAliases(tokens[0], aliases))
         {
-            // alias command
-            string oldName = aliases.find(tokens[0])->second;
             // replace alias command;
-            tokens[0] = oldName;
-            oldName = ReconstructCommand(tokens, tokenCount);
+            string oldName = ReconstructOldName(tokens, tokenCount, aliases);
             tokenCount = TokenizeCommandLine(tokens, oldName);
             ProcessCommand(tokens, tokenCount, history, aliases);
             return 1;
-        } else {
-            // OS command
+        }
+        // OS/linux command
+        else
+        {
             string command = ReconstructCommand(tokens, tokenCount);
             OsCommand(command);
             return 1;
@@ -261,7 +263,9 @@ void AddToAliases(string newName, string oldName, map<string, string> &aliases)
             aliases.erase(newName);
             aliases.insert(pair<string, string>(newName, oldName));
         }
-    } else {
+    }
+    else
+    {
         cout << "Max Number of aliases reached" << endl;
     }
 }
@@ -324,16 +328,57 @@ void ParseAliasFile(string tokens[], string alias)
     tokens[1] = value;
 }
 
-bool CheckIfCommandInAliases(string alias, map<string, string> &aliases) {
+bool CheckIfCommandInAliases(string alias, map<string, string> &aliases)
+{
     map<string, string>::iterator it;
     it = aliases.find(alias);
-    if (it != aliases.end()) {
+    if (it != aliases.end())
+    {
         return true;
     }
     return false;
 }
 
-void OsCommand(string command) {
+void OsCommand(string command)
+{
     const char *c = command.c_str();
     system(c);
+}
+
+string ReconstructOldName(string tokens[], int tokenCount, map<string, string> &aliases)
+{
+    string oldName = "";
+    map<string, string>::iterator aliasesIterator;
+    for (int i = 0; i < tokenCount; i++)
+    {
+        if (i % 2 == 0)
+        {
+            //even
+            // search for alias in aliases data structure
+            aliasesIterator = aliases.find(tokens[i]);
+            if (aliasesIterator != aliases.end())
+            {
+                // if found then add value of the alias to the oldName
+                oldName = oldName.append(aliasesIterator->second + " ");
+            }
+            else
+            {
+                // if token is not an alias then is a non-alias command
+                oldName = oldName.append(tokens[i] + " ");
+            }
+        }
+        else
+        {
+            // Odd positions will have | or a non-alias command.
+            if (tokens[i] == PIPE_OPERATOR)
+            {
+                oldName = oldName.append(PIPE_OPERATOR + " ");
+            }
+            else
+            {
+                oldName = oldName.append(tokens[i] + " ");
+            }
+        }
+    }
+    return oldName;
 }
