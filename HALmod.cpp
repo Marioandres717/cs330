@@ -370,14 +370,7 @@ string ReconstructOldName(string tokens[], int tokenCount, map<string, string> &
         else
         {
             // Odd positions will have | or a non-alias command.
-            if (tokens[i] == PIPE_OPERATOR)
-            {
-                oldName = oldName.append(PIPE_OPERATOR + " ");
-            }
-            else
-            {
-                oldName = oldName.append(tokens[i] + " ");
-            }
+            oldName = oldName.append(tokens[i] + " ");
         }
     }
     return oldName;
