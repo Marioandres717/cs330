@@ -1,3 +1,12 @@
+/* 
+Mario Andres Rendon Zapata
+SID: 200370018
+CS - 330
+Assignment 1 - Toyshell
+
+    - The purpose of this program is to create a shell that has some predefined
+    commands.
+*/
 #include "HALmod.h"
 
 int main()

@@ -26,6 +26,7 @@ int GetCommand(string tokens[], int &commandCounter)
     return tokenCount;
 }
 
+// prints the toyshell.
 void PrintCommandPrompt(int commandCounter)
 {
     string terminator;
@@ -93,8 +94,10 @@ int TokenizeCommandLine(string tokens[], string commandLine)
     return tokenCount;
 }
 
+// Proccess for finding which command to use
 int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map<string, string> &aliases)
 {
+    // check if tokens[0] is a terminating command.
     auto isATerminatingCommand = find(begin(TERMINATING_COMMANDS), end(TERMINATING_COMMANDS), tokens[0]);
     if (isATerminatingCommand == end(TERMINATING_COMMANDS))
     {
@@ -202,7 +205,7 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
         return 0;
     }
 }
-
+// Adds all commands to the history data structure
 void AddToHistory(string commandToAdd, vector<string> &history)
 {
     if (history.size() == MAX_HISTORY_COMMANDS)
@@ -211,7 +214,7 @@ void AddToHistory(string commandToAdd, vector<string> &history)
     }
     history.push_back(commandToAdd);
 }
-
+// Prints the commands in the history data structure
 void PrintHistory(vector<string> &history)
 {
     for (int i = 0; i < history.size(); i++)
@@ -219,7 +222,7 @@ void PrintHistory(vector<string> &history)
         cout << i << " " << history[i] << endl;
     }
 }
-
+// writes to a file the value of the input argument
 void WriteToFile(string filename, string input)
 {
     ofstream newfile;
@@ -227,7 +230,7 @@ void WriteToFile(string filename, string input)
     newfile << input.append("\n");
     newfile.close();
 }
-
+// concatenates the tokens to a single string
 string ReconstructCommand(string tokens[], int tokenCount)
 {
     string command = "";
@@ -237,7 +240,7 @@ string ReconstructCommand(string tokens[], int tokenCount)
     }
     return command;
 }
-
+// returns true if the character in the string is a number; else falsE
 bool isNumber(string tokenString)
 {
     for (int i = 0; i < tokenString.length(); i++)
@@ -246,14 +249,15 @@ bool isNumber(string tokenString)
 
     return true;
 }
-
+// returns true if number is inside range.
 bool inRange(unsigned low, unsigned high, unsigned x)
 {
     return ((x - low) <= (high - low));
 }
-
+// adds new alias to aliases data structure
 void AddToAliases(string newName, string oldName, map<string, string> &aliases)
 {
+    // checks that the size of the aliases data structure stays at a max of 10 elemnts
     if (aliases.size() <= MAX_ALIASES)
     {
         pair<map<string, string>::iterator, bool> ret;
@@ -269,7 +273,7 @@ void AddToAliases(string newName, string oldName, map<string, string> &aliases)
         cout << "Max Number of aliases reached" << endl;
     }
 }
-
+// remove alias from aliases data structure
 void RemoveFromAliases(string aliasToRemove, map<string, string> &aliases)
 {
     map<string, string>::iterator it;
@@ -279,7 +283,7 @@ void RemoveFromAliases(string aliasToRemove, map<string, string> &aliases)
         aliases.erase(aliasToRemove);
     }
 }
-
+// print all elements in the aliases data structure
 void PrintAliases(map<string, string> &aliases)
 {
     map<string, string>::iterator it;
@@ -288,7 +292,7 @@ void PrintAliases(map<string, string> &aliases)
         cout << it->first << " => " << it->second << "\n";
     }
 }
-
+// save all aliases from data structure to a file
 void SaveAliasesToFile(string filename, map<string, string> &aliases)
 {
     ofstream newfile;
@@ -301,7 +305,7 @@ void SaveAliasesToFile(string filename, map<string, string> &aliases)
     }
     newfile.close();
 }
-
+// reads all aliases from a file to aliases data structure
 void ReadNewNames(string filename, map<string, string> &aliases)
 {
     ifstream file;
@@ -327,7 +331,7 @@ void ParseAliasFile(string tokens[], string alias)
     tokens[0] = key;
     tokens[1] = value;
 }
-
+// checks if command entered is inside aliases data structure.
 bool CheckIfCommandInAliases(string alias, map<string, string> &aliases)
 {
     map<string, string>::iterator it;
@@ -338,13 +342,13 @@ bool CheckIfCommandInAliases(string alias, map<string, string> &aliases)
     }
     return false;
 }
-
+// passes command entered to the operating system shell
 void OsCommand(string command)
 {
     const char *c = command.c_str();
     system(c);
 }
-
+// Reconstructs the old command from the alias.
 string ReconstructOldName(string tokens[], int tokenCount, map<string, string> &aliases)
 {
     string oldName = "";
