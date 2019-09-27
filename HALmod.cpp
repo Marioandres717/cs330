@@ -204,8 +204,8 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
         // OS/linux command
         else
         {
-            string command = ReconstructCommand(tokens, tokenCount);
-            OsCommand(command);
+            // string command = ReconstructCommand(tokens, tokenCount);
+            OsCommand(tokens, tokenCount);
             return 1;
         }
     }
@@ -354,10 +354,38 @@ bool CheckIfCommandInAliases(string alias, map<string, string> &aliases)
     return false;
 }
 // passes command entered to the operating system shell
-void OsCommand(string command)
+void OsCommand(string tokens[], int tokenCount)
 {
-    const char *c = command.c_str();
-    system(c);
+    char *pathAsChars = (char *)malloc(strlen(getenv(PATH_VARIABLE.c_str())) * sizeof(char *) + 1);
+    strcpy(pathAsChars, getenv(PATH_VARIABLE.c_str()));
+    char *currentPath;
+    char *command[tokenCount + 1];
+    if ((currentPath = strtok(pathAsChars, ":")) != NULL)
+    {
+        while ((currentPath = strtok(NULL, ":")) != NULL)
+        {
+            string filePath = currentPath + (string) "/" + tokens[0];
+            if (access(filePath.c_str(), X_OK) == 0)
+            {
+                // create array of pointers to c strings. We need this for the execve call
+                for (int i = 0; i <= tokenCount; i++)
+                {
+                    if (i == tokenCount)
+                    {
+                        command[i] = NULL;
+                    }
+                    else
+                    {
+                        command[i] = (char *)tokens[i].c_str();
+                    }
+                }
+                execve(filePath.c_str(), command, environ);
+                break;
+            }
+        }
+    }
+    // system(c);
+    free(pathAsChars);
 }
 // Reconstructs the old command from the alias.
 string ReconstructOldName(string tokens[], int tokenCount, map<string, string> &aliases)
