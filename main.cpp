@@ -2,10 +2,10 @@
 Mario Andres Rendon Zapata
 SID: 200370018
 CS - 330
-Assignment 1 - Toyshell
+Assignment 2 - Toyshell extended
 
     - The purpose of this program is to create a shell that has some predefined
-    commands.
+    commands. And to use the fork()
 */
 #include "HALmod.h"
 
