@@ -76,10 +76,21 @@ int TokenizeCommandLine(string tokens[], string commandLine)
     i = 0;
     if ((token[i] = strtok(workCommandLine, " ")) != NULL)
     {
-        i++;
-        while ((token[i] = strtok(NULL, " ")) != NULL)
+        if (token[i] != COMMENT_OPERATOR)
         {
             i++;
+            while ((token[i] = strtok(NULL, " ")) != NULL)
+            {
+                if (token[i] == COMMENT_OPERATOR)
+                {
+                    break;
+                }
+                i++;
+            }
+        }
+        else
+        {
+            token[i] = (char *)"";
         }
     }
     tokenCount = i;

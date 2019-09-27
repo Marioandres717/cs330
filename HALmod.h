@@ -21,6 +21,7 @@ const int MAX_HISTORY_COMMANDS = 10;
 const int MAX_ALIASES = 10;
 const int SLEEP_DELAY = 100000;
 const string PIPE_OPERATOR = "|";
+const string COMMENT_OPERATOR = "$";
 const vector<string> TERMINATING_COMMANDS{
     "shutdown",
     "restart",
