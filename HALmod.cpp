@@ -9,9 +9,9 @@ int GetCommand(string tokens[], int &commandCounter)
 
     do
     {
-        PrintCommandPrompt(commandCounter);
         while (1)
         {
+            PrintCommandPrompt(commandCounter);
             getline(cin, commandLine);
             tokenCount = TokenizeCommandLine(tokens, commandLine);
             if (tokenCount > 0)
@@ -106,7 +106,7 @@ int TokenizeCommandLine(string tokens[], string commandLine)
 }
 
 // Proccess for finding which command to use
-int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map<string, string> &aliases)
+int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map<string, string> &aliases, string bgProcesses[][4])
 {
     // check if tokens[0] is a terminating command.
     auto isATerminatingCommand = find(begin(TERMINATING_COMMANDS), end(TERMINATING_COMMANDS), tokens[0]);
@@ -141,7 +141,7 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
                         if (inRange(0, MAX_HISTORY_COMMANDS, index))
                         {
                             tokenCount = TokenizeCommandLine(tokens, history[index]);
-                            ProcessCommand(tokens, tokenCount, history, aliases);
+                            ProcessCommand(tokens, tokenCount, history, aliases, bgProcesses);
                         }
                     }
                 }
@@ -198,13 +198,12 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
             // replace alias command;
             string oldName = ReconstructOldName(tokens, tokenCount, aliases);
             tokenCount = TokenizeCommandLine(tokens, oldName);
-            ProcessCommand(tokens, tokenCount, history, aliases);
+            ProcessCommand(tokens, tokenCount, history, aliases, bgProcesses);
             return 1;
         }
         // OS/linux command
         else
         {
-            // string command = ReconstructCommand(tokens, tokenCount);
             OsCommand(tokens, tokenCount);
             return 1;
         }
@@ -360,32 +359,87 @@ void OsCommand(string tokens[], int tokenCount)
     strcpy(pathAsChars, getenv(PATH_VARIABLE.c_str()));
     char *currentPath;
     char *command[tokenCount + 1];
-    if ((currentPath = strtok(pathAsChars, ":")) != NULL)
+    pid_t fork_return;
+    int status;
+
+    fork_return = fork();
+    if (fork_return == 0)
     {
-        while ((currentPath = strtok(NULL, ":")) != NULL)
+        // if last token is "-" then is a background execution
+        if (tokens[tokenCount - 1] == "-")
         {
-            string filePath = currentPath + (string) "/" + tokens[0];
-            if (access(filePath.c_str(), X_OK) == 0)
+            // setsid();
+            setpgid(0, 0);
+        }
+        if ((currentPath = strtok(pathAsChars, ":")) != NULL)
+        {
+            while ((currentPath = strtok(NULL, ":")) != NULL)
             {
-                // create array of pointers to c strings. We need this for the execve call
-                for (int i = 0; i <= tokenCount; i++)
+                string filePath = currentPath + (string) "/" + tokens[0];
+                if (access(filePath.c_str(), X_OK) == 0)
                 {
-                    if (i == tokenCount)
+                    // create array of pointers to c strings. We need this for the execve call
+                    for (int i = 0; i <= tokenCount; i++)
                     {
-                        command[i] = NULL;
+                        if (i == tokenCount)
+                        {
+                            command[i] = NULL;
+                        }
+                        else if (i == (tokenCount - 1) && tokens[tokenCount - 1] == "-")
+                        {
+                            // ignore character "-"
+                            command[i] = NULL;
+                        }
+                        else
+                        {
+                            command[i] = (char *)tokens[i].c_str();
+                        }
                     }
-                    else
-                    {
-                        command[i] = (char *)tokens[i].c_str();
-                    }
+                    free(pathAsChars);
+                    execve(filePath.c_str(), command, environ);
                 }
-                execve(filePath.c_str(), command, environ);
-                break;
+                else
+                {
+                    continue;
+                }
+            }
+            if (currentPath == NULL)
+            {
+                cout << "\n"
+                     << tokens[0] << ": Command not found" << endl;
+                exit(0);
             }
         }
     }
-    // system(c);
-    free(pathAsChars);
+    else if (fork_return > 0)
+    {
+        if (tokens[tokenCount - 1] != "-")
+        {
+            wait(&status);
+        }
+        else
+        {
+            int pid = waitpid(-1, &status, WNOHANG);
+            if (pid > 0)
+            {
+                printf("\nCHILDREN: %d has completed\n", pid);
+            }
+            else if (pid == 0)
+            {
+                printf("\nHERE ON THE PARENT\n");
+            }
+            else
+            {
+                printf("IN THE MINUS -1");
+            }
+            printf("\nHERE ON THE PARENT\n");
+        }
+    }
+    else
+    {
+        perror("Fork failed");
+        exit(EXIT_FAILURE);
+    }
 }
 // Reconstructs the old command from the alias.
 string ReconstructOldName(string tokens[], int tokenCount, map<string, string> &aliases)

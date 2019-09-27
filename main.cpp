@@ -16,11 +16,12 @@ int main()
     int commandCounter = 1;
     vector<string> history;
     map<string, string> aliases;
+    string bgProcesses[MAX_NUMBER_OF_BG_PROCESS][4];
 
     do
     {
         tokenCount = GetCommand(tokens, commandCounter);
-    } while (ProcessCommand(tokens, tokenCount, history, aliases));
+    } while (ProcessCommand(tokens, tokenCount, history, aliases, bgProcesses));
 
     return 0;
 }
