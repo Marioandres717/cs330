@@ -205,7 +205,6 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
         else
         {
             OsCommand(tokens, tokenCount);
-            printf("AFTER OSCOMMANDs\n");
             return 1;
         }
     }
@@ -412,30 +411,45 @@ void OsCommand(string tokens[], int tokenCount)
     {
         if (tokens[tokenCount - 1] != "-")
         {
-            while (1)
+            pid_t wpid;
+            // while ((wpid = waitpid(-1, &status, WNOHANG)) > 0)
+            while ((wpid = wait(&status)) > 0)
             {
                 // normal process
-                int wpid = wait(&status);
                 if (WIFEXITED(status))
                     printf("\n Child returned %d\n", WEXITSTATUS(status));
 
-                if (wpid == -1)
+                //is a background process
+                if (wpid != fork_return)
                 {
                     // wpid should be in map
-                    //is a background process
                     //print info and remove it from map
-                    perror("FAILED to wait");
-                    break;
-                }
-                else if (wpid != fork_return)
-                {
                     printf("\n wpid: %d  -  pid: %d \n", wpid, fork_return);
+                }
+                // current child terminated
+                else if (wpid == fork_return)
+                {
+                    printf("\n CHILD wpid: %d  -  pid: %d \n", wpid, fork_return);
                     break;
                 }
+                // Error while waiting child
                 else
                 {
-                    // current child terminated
-                    printf("\n ELSEEEE wpid: %d  -  pid: %d \n", wpid, fork_return);
+                    perror("FAILED to waitpid");
+                    switch (errno)
+                    {
+                    case ECHILD:
+                        printf("waitpid(), the process specified by pid does not exist or is not a child of calling process");
+                        break;
+                    case EINTR:
+                        printf("WNOHANG was not set and an unblocked signal or a SIGCHILD was chaught");
+                        break;
+                    case EINVAL:
+                        printf("The options argument was invalid");
+                        break;
+                    default:
+                        break;
+                    }
                     break;
                 }
             }
@@ -444,7 +458,7 @@ void OsCommand(string tokens[], int tokenCount)
         {
             // background process add to data structure
             if (WIFEXITED(status))
-                printf("\n Child returned %d\n", WEXITSTATUS(status));
+                printf("\n Child returned on parent with '-' %d\n", WEXITSTATUS(status));
 
             if (WIFSIGNALED(status))
                 printf("\n Child terminater by SIGNAL %d\n", WTERMSIG(status));
