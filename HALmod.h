@@ -69,5 +69,5 @@ void SaveAliasesToFile(string filename, map<string, string> &aliases);
 void ReadNewNames(string filename, map<string, string> &aliases);
 void ParseAliasFile(string tokens[], string alias);
 void OsCommand(string tokens[], int tokenCount);
-void PrintBackJobs(string bgProcesses[][4]);
-void AddToBackJobs(vector<vector<string>> backJobs);
+void PrintBackJobs(vector<vector<string>> &backJobs);
+void AddToBackJobs(vector<vector<string>> &backJobs);

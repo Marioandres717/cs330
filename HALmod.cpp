@@ -205,6 +205,7 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
         else
         {
             OsCommand(tokens, tokenCount);
+            printf("AFTER OSCOMMANDs\n");
             return 1;
         }
     }
@@ -359,26 +360,14 @@ void OsCommand(string tokens[], int tokenCount)
     strcpy(pathAsChars, getenv(PATH_VARIABLE.c_str()));
     char *currentPath;
     char *command[tokenCount + 1];
-    pid_t fork_return;
     int status;
 
+    pid_t fork_return;
     fork_return = fork();
+
+    // Child Process
     if (fork_return == 0)
     {
-        // if last token is "-" then is a background execution
-        if (tokens[tokenCount - 1] == "-")
-        {
-            // setsid();
-            int pgid = setpgid(0, 0);
-            if (pgid == 0)
-            {
-                // AddToBackJobs();
-            }
-            else
-            {
-                perror("Could not setpgid");
-            }
-        }
         if ((currentPath = strtok(pathAsChars, ":")) != NULL)
         {
             while ((currentPath = strtok(NULL, ":")) != NULL)
@@ -413,39 +402,71 @@ void OsCommand(string tokens[], int tokenCount)
             }
             if (currentPath == NULL)
             {
-                cout << "\n"
-                     << tokens[0] << ": Command not found" << endl;
+                cout << tokens[0] << ": Command not found" << endl;
                 exit(0);
             }
         }
     }
+    // Parent Process
     else if (fork_return > 0)
     {
         if (tokens[tokenCount - 1] != "-")
         {
-            wait(&status);
+            while (1)
+            {
+                // normal process
+                int wpid = wait(&status);
+                if (WIFEXITED(status))
+                    printf("\n Child returned %d\n", WEXITSTATUS(status));
+
+                if (wpid == -1)
+                {
+                    // wpid should be in map
+                    //is a background process
+                    //print info and remove it from map
+                    perror("FAILED to wait");
+                    break;
+                }
+                else if (wpid != fork_return)
+                {
+                    printf("\n wpid: %d  -  pid: %d \n", wpid, fork_return);
+                    break;
+                }
+                else
+                {
+                    // current child terminated
+                    printf("\n ELSEEEE wpid: %d  -  pid: %d \n", wpid, fork_return);
+                    break;
+                }
+            }
         }
         else
         {
-            int pid = waitpid(-1, &status, WNOHANG);
-            if (pid > 0)
-            {
-                printf("\nCHILDREN: %d has completed\n", pid);
-            }
-            else if (pid == 0)
-            {
-                printf("\nHERE ON THE PARENT\n");
-            }
-            else
-            {
-                printf("\nIN THE MINUS -1\n");
-            }
-            printf("\nHERE ON THE END\n");
+            // background process add to data structure
+            if (WIFEXITED(status))
+                printf("\n Child returned %d\n", WEXITSTATUS(status));
+
+            if (WIFSIGNALED(status))
+                printf("\n Child terminater by SIGNAL %d\n", WTERMSIG(status));
         }
     }
     else
     {
-        perror("Fork failed");
+        perror("ERROR:\n");
+        switch (errno)
+        {
+        case EAGAIN:
+            printf("fork() Cannot allocate sufficient memory to copy the parent's page tables and allocate a task structured for the child");
+            break;
+        case ENOMEM:
+            printf("fork() failed to allocate the necessary kernel structures because memory is tight.");
+            break;
+        case ENOSYS:
+            printf("fork() is not supported on this platform");
+            break;
+        default:
+            break;
+        }
         exit(EXIT_FAILURE);
     }
 }
