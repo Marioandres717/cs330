@@ -16,7 +16,7 @@ int main()
     int commandCounter = 1;
     vector<string> history;
     map<string, string> aliases;
-    string bgProcesses[MAX_NUMBER_OF_BG_PROCESS][4];
+    vector<vector<string>> bgProcesses;
 
     do
     {

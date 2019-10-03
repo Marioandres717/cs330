@@ -106,7 +106,7 @@ int TokenizeCommandLine(string tokens[], string commandLine)
 }
 
 // Proccess for finding which command to use
-int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map<string, string> &aliases, string bgProcesses[][4])
+int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map<string, string> &aliases, vector<vector<string>> &bgProcesses)
 {
     // check if tokens[0] is a terminating command.
     auto isATerminatingCommand = find(begin(TERMINATING_COMMANDS), end(TERMINATING_COMMANDS), tokens[0]);
@@ -369,7 +369,15 @@ void OsCommand(string tokens[], int tokenCount)
         if (tokens[tokenCount - 1] == "-")
         {
             // setsid();
-            setpgid(0, 0);
+            int pgid = setpgid(0, 0);
+            if (pgid == 0)
+            {
+                // AddToBackJobs();
+            }
+            else
+            {
+                perror("Could not setpgid");
+            }
         }
         if ((currentPath = strtok(pathAsChars, ":")) != NULL)
         {
@@ -430,9 +438,9 @@ void OsCommand(string tokens[], int tokenCount)
             }
             else
             {
-                printf("IN THE MINUS -1");
+                printf("\nIN THE MINUS -1\n");
             }
-            printf("\nHERE ON THE PARENT\n");
+            printf("\nHERE ON THE END\n");
         }
     }
     else
@@ -471,4 +479,8 @@ string ReconstructOldName(string tokens[], int tokenCount, map<string, string> &
         }
     }
     return oldName;
+}
+
+void AddToBackJobs(vector<vector<string>> backJobs)
+{
 }
