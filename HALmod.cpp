@@ -106,7 +106,7 @@ int TokenizeCommandLine(string tokens[], string commandLine)
 }
 
 // Proccess for finding which command to use
-int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map<string, string> &aliases, vector<vector<string>> &bgProcesses)
+int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map<string, string> &aliases, map<int, vector<string>> &backJobs)
 {
     // check if tokens[0] is a terminating command.
     auto isATerminatingCommand = find(begin(TERMINATING_COMMANDS), end(TERMINATING_COMMANDS), tokens[0]);
@@ -141,7 +141,7 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
                         if (inRange(0, MAX_HISTORY_COMMANDS, index))
                         {
                             tokenCount = TokenizeCommandLine(tokens, history[index]);
-                            ProcessCommand(tokens, tokenCount, history, aliases, bgProcesses);
+                            ProcessCommand(tokens, tokenCount, history, aliases, backJobs);
                         }
                     }
                 }
@@ -198,13 +198,13 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
             // replace alias command;
             string oldName = ReconstructOldName(tokens, tokenCount, aliases);
             tokenCount = TokenizeCommandLine(tokens, oldName);
-            ProcessCommand(tokens, tokenCount, history, aliases, bgProcesses);
+            ProcessCommand(tokens, tokenCount, history, aliases, backJobs);
             return 1;
         }
         // OS/linux command
         else
         {
-            OsCommand(tokens, tokenCount);
+            OsCommand(tokens, tokenCount, backJobs);
             return 1;
         }
     }
@@ -353,7 +353,7 @@ bool CheckIfCommandInAliases(string alias, map<string, string> &aliases)
     return false;
 }
 // passes command entered to the operating system shell
-void OsCommand(string tokens[], int tokenCount)
+void OsCommand(string tokens[], int tokenCount, map<int, vector<string>> &backJobs)
 {
     char *pathAsChars = (char *)malloc(strlen(getenv(PATH_VARIABLE.c_str())) * sizeof(char *) + 1);
     strcpy(pathAsChars, getenv(PATH_VARIABLE.c_str()));
@@ -416,15 +416,14 @@ void OsCommand(string tokens[], int tokenCount)
             while ((wpid = wait(&status)) > 0)
             {
                 // normal process
-                if (WIFEXITED(status))
-                    printf("\n Child returned %d\n", WEXITSTATUS(status));
-
                 //is a background process
                 if (wpid != fork_return)
                 {
                     // wpid should be in map
                     //print info and remove it from map
                     printf("\n wpid: %d  -  pid: %d \n", wpid, fork_return);
+                    if (WIFEXITED(status))
+                        printf("\n Child returned %d\n", WEXITSTATUS(status));
                 }
                 // current child terminated
                 else if (wpid == fork_return)
@@ -454,16 +453,15 @@ void OsCommand(string tokens[], int tokenCount)
                 }
             }
         }
+        // Background process
         else
         {
             // background process add to data structure
-            if (WIFEXITED(status))
-                printf("\n Child returned on parent with '-' %d\n", WEXITSTATUS(status));
-
-            if (WIFSIGNALED(status))
-                printf("\n Child terminater by SIGNAL %d\n", WTERMSIG(status));
+            AddToBackJobs(tokens, tokenCount, fork_return, backJobs);
+            PrintBackJobs(backJobs);
         }
     }
+    // error when calling fork()
     else
     {
         perror("ERROR:\n");
@@ -516,6 +514,43 @@ string ReconstructOldName(string tokens[], int tokenCount, map<string, string> &
     return oldName;
 }
 
-void AddToBackJobs(vector<vector<string>> backJobs)
+void AddToBackJobs(string tokens[], int tokenCount, int processID, map<int, vector<string>> &backJobs)
 {
+    string command = ReconstructCommand(tokens, tokenCount);
+    string time = "00:00";
+    vector<string> temp;
+    temp.push_back(time);
+    temp.push_back(command);
+    pair<map<int, vector<string>>::iterator, bool> ret;
+    ret = backJobs.insert(pair<int, vector<string>>(processID, temp));
+}
+
+void PrintBackJobs(map<int, vector<string>> &backJobs)
+{
+    map<int, vector<string>>::iterator it;
+    string tableHeader[] = {"PID", "TIME", "CMD"};
+
+    for (int i = 0; i < (sizeof(tableHeader) / sizeof(*tableHeader)); i++)
+    {
+        PrintElement(tableHeader[i]);
+    }
+    cout << endl;
+    for (it = backJobs.begin(); it != backJobs.end(); ++it)
+    {
+        PrintElement(it->first);
+        for (int i = 0; i < it->second.size(); i++)
+        {
+
+            PrintElement(it->second[i]);
+        }
+        cout << endl;
+    }
+}
+
+template <typename T>
+void PrintElement(T t)
+{
+    int width = 10;
+    char separator = ' ';
+    cout << left << setw(width) << setfill(separator) << t;
 }

@@ -17,6 +17,7 @@
 #include <sys/wait.h>
 #include <stdio.h>
 #include <errno.h>
+#include <iomanip>
 
 using namespace std;
 
@@ -55,7 +56,7 @@ bool inRange(unsigned low, unsigned high, unsigned x);
 bool CheckIfCommandInAliases(string alias, map<string, string> &aliases);
 int GetCommand(string tokens[], int &commandCounter);
 int TokenizeCommandLine(string tokens[], string commandLine);
-int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map<string, string> &aliases, vector<vector<string>> &bgProcesses);
+int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map<string, string> &aliases, map<int, vector<string>> &bgProcesses);
 string ReconstructCommand(string tokens[], int tokenCount);
 string ReconstructOldName(string tokens[], int tokenCount, map<string, string> &aliases);
 void PrintCommandPrompt(int commandCounter);
@@ -68,6 +69,9 @@ void PrintAliases(map<string, string> &aliases);
 void SaveAliasesToFile(string filename, map<string, string> &aliases);
 void ReadNewNames(string filename, map<string, string> &aliases);
 void ParseAliasFile(string tokens[], string alias);
-void OsCommand(string tokens[], int tokenCount);
-void PrintBackJobs(vector<vector<string>> &backJobs);
-void AddToBackJobs(vector<vector<string>> &backJobs);
+void OsCommand(string tokens[], int tokenCount, map<int, vector<string>> &backJobs);
+void PrintBackJobs(map<int, vector<string>> &backJobs);
+void AddToBackJobs(string tokens[], int tokenCount, int processID, map<int, vector<string>> &backJobs);
+
+template <typename T>
+void PrintElement(T t);

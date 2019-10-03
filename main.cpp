@@ -16,12 +16,12 @@ int main()
     int commandCounter = 1;
     vector<string> history;
     map<string, string> aliases;
-    vector<vector<string>> bgProcesses;
+    map<int, vector<string>> backJobs;
 
     do
     {
         tokenCount = GetCommand(tokens, commandCounter);
-    } while (ProcessCommand(tokens, tokenCount, history, aliases, bgProcesses));
+    } while (ProcessCommand(tokens, tokenCount, history, aliases, backJobs));
 
     return 0;
 }
