@@ -422,17 +422,14 @@ void OsCommand(string tokens[], int tokenCount, map<int, vector<string>> &backJo
                 //is a background process
                 if (wpid != fork_return)
                 {
-                    // wpid should be in map
                     if (WIFEXITED(status))
                     {
-                        printf("\n Child returned %d\n", WEXITSTATUS(status));
                         RemoveFromBackJobs(wpid, backJobs);
                     }
                 }
                 // normal child process
                 else if (wpid == fork_return)
                 {
-                    printf("\n CHILD wpid: %d  -  pid: %d \n", wpid, fork_return);
                     break;
                 }
                 // Error while waiting child
@@ -460,7 +457,7 @@ void OsCommand(string tokens[], int tokenCount, map<int, vector<string>> &backJo
         // Background process
         else
         {
-            // background process add to data structure
+            // add to background jobs
             AddToBackJobs(tokens, tokenCount, fork_return, backJobs);
         }
     }

@@ -49,6 +49,7 @@ const vector<string> SHELL_COMMANDS{
     "savenewnames",
     "readnewnames",
     "backjobs",
+    "frontjob",
 };
 
 extern char **environ;
