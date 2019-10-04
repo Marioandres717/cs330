@@ -174,7 +174,7 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
                     string filename = tokens[1];
                     ReadNewNames(filename, aliases);
                 }
-                else if (tokens[0] == SHELL_COMMANDS[8] && tokens[1].empty())
+                else if (tokens[0] == SHELL_COMMANDS[9] && !tokens[1].empty())
                 {
                     string processID = tokens[1];
                     FrontJob(processID, backJobs);
@@ -544,6 +544,8 @@ void PrintBackJobs(map<int, vector<string>> &backJobs)
         cout
             << endl;
     }
+    cout
+            << endl;
 }
 
 template <typename T>
@@ -596,5 +598,6 @@ void FrontJob(string processID, map<int, vector<string>> &backJobs)
     if (it != backJobs.end())
     {
         wpid = waitpid(it->first, &status, 0);
+        // kill(it->first, SIGCONT);
     }
 }
