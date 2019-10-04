@@ -530,7 +530,9 @@ void AddToBackJobs(string tokens[], int tokenCount, int processID, map<int, vect
 void PrintBackJobs(map<int, vector<string>> &backJobs)
 {
     map<int, vector<string>>::iterator it;
-    string tableHeader[] = {"PID", "TIME", "CMD"};
+    int status;
+
+    string tableHeader[] = {"PID", "TIME", "CMD", "STATUS"};
 
     for (int i = 0; i < (sizeof(tableHeader) / sizeof(*tableHeader)); i++)
     {
@@ -545,7 +547,27 @@ void PrintBackJobs(map<int, vector<string>> &backJobs)
 
             PrintElement(it->second[i]);
         }
-        cout << endl;
+
+        pid_t wpid = waitpid(it->first, &status, WNOHANG);
+        // child has not change status
+        if (wpid == 0)
+        {
+            PrintElement("RUNNING");
+        }
+        // child has succeed
+        else if (wpid > 0)
+        {
+            PrintElement("COMPLETE");
+        }
+        else
+        {
+            // There is no backjobs
+            PrintElement("COMPLETE");
+            cout << endl;
+            RemoveFromBackJobs(it->first, backJobs);
+        }
+        cout
+            << endl;
     }
 }
 
