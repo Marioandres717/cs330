@@ -79,3 +79,4 @@ template <typename T>
 void PrintElement(T t);
 string ReadableTimestamp();
 void RemoveFromBackJobs(int processID, map<int, vector<string>> &backJobs);
+void FrontJob(string processID, map<int, vector<string>> &backJobs);

@@ -174,6 +174,11 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
                     string filename = tokens[1];
                     ReadNewNames(filename, aliases);
                 }
+                else if (tokens[0] == SHELL_COMMANDS[8] && tokens[1].empty())
+                {
+                    string processID = tokens[1];
+                    FrontJob(processID, backJobs);
+                }
             }
             // single token commands
             else
@@ -416,7 +421,6 @@ void OsCommand(string tokens[], int tokenCount, map<int, vector<string>> &backJo
         if (tokens[tokenCount - 1] != "-")
         {
             pid_t wpid;
-            // while ((wpid = waitpid(-1, &status, WNOHANG)) > 0)
             while ((wpid = wait(&status)) > 0)
             {
                 //is a background process
@@ -435,22 +439,7 @@ void OsCommand(string tokens[], int tokenCount, map<int, vector<string>> &backJo
                 // Error while waiting child
                 else
                 {
-                    perror("FAILED to waitpid");
-                    switch (errno)
-                    {
-                    case ECHILD:
-                        printf("waitpid(), the process specified by pid does not exist or is not a child of calling process");
-                        break;
-                    case EINTR:
-                        printf("WNOHANG was not set and an unblocked signal or a SIGCHILD was chaught");
-                        break;
-                    case EINVAL:
-                        printf("The options argument was invalid");
-                        break;
-                    default:
-                        break;
-                    }
-                    break;
+                    perror("FAILED to waitpid:\n");
                 }
             }
         }
@@ -464,21 +453,7 @@ void OsCommand(string tokens[], int tokenCount, map<int, vector<string>> &backJo
     // error when calling fork()
     else
     {
-        perror("ERROR:\n");
-        switch (errno)
-        {
-        case EAGAIN:
-            printf("fork() Cannot allocate sufficient memory to copy the parent's page tables and allocate a task structured for the child");
-            break;
-        case ENOMEM:
-            printf("fork() failed to allocate the necessary kernel structures because memory is tight.");
-            break;
-        case ENOSYS:
-            printf("fork() is not supported on this platform");
-            break;
-        default:
-            break;
-        }
+        perror("FAILED to fork:\n");
         exit(EXIT_FAILURE);
     }
 }
@@ -603,5 +578,23 @@ void RemoveFromBackJobs(int processID, map<int, vector<string>> &backJobs)
         cout << "[" << it->first << "]     "
              << "DONE       " << it->second[1] << endl;
         backJobs.erase(processID);
+    }
+}
+
+void FrontJob(string processID, map<int, vector<string>> &backJobs)
+{
+    int pid;
+    size_t sz;
+
+    // convert token string to int
+    pid = stoi(processID, &sz);
+
+    map<int, vector<string>>::iterator it;
+    it = backJobs.find(pid);
+    pid_t wpid;
+    int status;
+    if (it != backJobs.end())
+    {
+        wpid = waitpid(it->first, &status, 0);
     }
 }
