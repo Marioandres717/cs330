@@ -1,5 +1,4 @@
 #include "HALmod.h"
-#include <cstring>
 
 // Read Command from shell
 int GetCommand(string tokens[], int &commandCounter)
@@ -188,6 +187,11 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
                 else if (tokens[0] == SHELL_COMMANDS[5])
                 {
                     PrintAliases(aliases);
+                }
+                // BACKJOBS
+                else if (tokens[0] == SHELL_COMMANDS[8])
+                {
+                    PrintBackJobs(backJobs);
                 }
             }
             return 1;
@@ -415,17 +419,17 @@ void OsCommand(string tokens[], int tokenCount, map<int, vector<string>> &backJo
             // while ((wpid = waitpid(-1, &status, WNOHANG)) > 0)
             while ((wpid = wait(&status)) > 0)
             {
-                // normal process
                 //is a background process
                 if (wpid != fork_return)
                 {
                     // wpid should be in map
-                    //print info and remove it from map
-                    printf("\n wpid: %d  -  pid: %d \n", wpid, fork_return);
                     if (WIFEXITED(status))
+                    {
                         printf("\n Child returned %d\n", WEXITSTATUS(status));
+                        RemoveFromBackJobs(wpid, backJobs);
+                    }
                 }
-                // current child terminated
+                // normal child process
                 else if (wpid == fork_return)
                 {
                     printf("\n CHILD wpid: %d  -  pid: %d \n", wpid, fork_return);
@@ -458,7 +462,6 @@ void OsCommand(string tokens[], int tokenCount, map<int, vector<string>> &backJo
         {
             // background process add to data structure
             AddToBackJobs(tokens, tokenCount, fork_return, backJobs);
-            PrintBackJobs(backJobs);
         }
     }
     // error when calling fork()
@@ -517,12 +520,14 @@ string ReconstructOldName(string tokens[], int tokenCount, map<string, string> &
 void AddToBackJobs(string tokens[], int tokenCount, int processID, map<int, vector<string>> &backJobs)
 {
     string command = ReconstructCommand(tokens, tokenCount);
-    string time = "00:00";
+    string time = ReadableTimestamp();
     vector<string> temp;
     temp.push_back(time);
     temp.push_back(command);
     pair<map<int, vector<string>>::iterator, bool> ret;
     ret = backJobs.insert(pair<int, vector<string>>(processID, temp));
+
+    cout << "[" << backJobs.size() << "]  " << processID << endl;
 }
 
 void PrintBackJobs(map<int, vector<string>> &backJobs)
@@ -553,4 +558,31 @@ void PrintElement(T t)
     int width = 10;
     char separator = ' ';
     cout << left << setw(width) << setfill(separator) << t;
+}
+
+string ReadableTimestamp()
+{
+    time_t rawtime;
+    struct tm *timeinfo;
+    char buffer[80];
+
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    strftime(buffer, sizeof(buffer), "%H:%M:%S", timeinfo);
+    std::string str(buffer);
+
+    return str;
+}
+
+void RemoveFromBackJobs(int processID, map<int, vector<string>> &backJobs)
+{
+    map<int, vector<string>>::iterator it;
+    it = backJobs.find(processID);
+    if (it != backJobs.end())
+    {
+        cout << "[" << it->first << "]     "
+             << "DONE       " << it->second[1] << endl;
+        backJobs.erase(processID);
+    }
 }

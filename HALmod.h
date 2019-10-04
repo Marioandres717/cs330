@@ -17,6 +17,8 @@
 #include <sys/wait.h>
 #include <stdio.h>
 #include <errno.h>
+#include <ctime>
+#include <cstring>
 #include <iomanip>
 
 using namespace std;
@@ -72,6 +74,7 @@ void ParseAliasFile(string tokens[], string alias);
 void OsCommand(string tokens[], int tokenCount, map<int, vector<string>> &backJobs);
 void PrintBackJobs(map<int, vector<string>> &backJobs);
 void AddToBackJobs(string tokens[], int tokenCount, int processID, map<int, vector<string>> &backJobs);
-
 template <typename T>
 void PrintElement(T t);
+string ReadableTimestamp();
+void RemoveFromBackJobs(int processID, map<int, vector<string>> &backJobs);
