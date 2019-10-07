@@ -247,7 +247,9 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
         // OS/linux command
         else
         {
-            OsCommand(tokens, tokenCount, backJobs);
+            if (!tokens[0].empty())
+                OsCommand(tokens, tokenCount, backJobs);
+
             return 1;
         }
     }

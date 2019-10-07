@@ -25,7 +25,7 @@
 
 using namespace std;
 
-const int MAX_COMMAND_LINE_ARGUMENTS = 8;
+const int MAX_COMMAND_LINE_ARGUMENTS = 15;
 const int MAX_HISTORY_COMMANDS = 10;
 const int MAX_ALIASES = 10;
 const int SLEEP_DELAY = 100000;
