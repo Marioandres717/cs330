@@ -372,7 +372,6 @@ void ReadNewNames(string filename, map<string, string> &aliases)
         while (getline(file, alias))
         {
             ParseAliasFile(tokens, alias);
-            pair<map<string, string>::iterator, bool> ret;
             AddToAliases(tokens[0], tokens[1], aliases);
         }
     }
