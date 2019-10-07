@@ -20,6 +20,8 @@
 #include <ctime>
 #include <cstring>
 #include <iomanip>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 using namespace std;
 
@@ -50,6 +52,16 @@ const vector<string> SHELL_COMMANDS{
     "readnewnames",
     "backjobs",
     "frontjob",
+    "cond",
+    "notcond",
+};
+
+const vector<string> CONDITIONAL_COMMANDS{
+    "checkr",
+    "checke",
+    "checkx",
+    "checkd",
+    "checkw",
 };
 
 extern char **environ;
@@ -80,3 +92,9 @@ void PrintElement(T t);
 string ReadableTimestamp();
 void RemoveFromBackJobs(int processID, map<int, vector<string>> &backJobs);
 void FrontJob(string processID, map<int, vector<string>> &backJobs);
+bool Conditional(string conditionalCommand, string filename);
+bool CanReadFile(string filename);
+bool CanWriteFile(string filename);
+bool CanExecuteFile(string filename);
+bool IsaDirectory(string filename);
+bool DoesItExist(string filename);

@@ -174,10 +174,33 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
                     string filename = tokens[1];
                     ReadNewNames(filename, aliases);
                 }
+                // FRONTJOB
                 else if (tokens[0] == SHELL_COMMANDS[9] && !tokens[1].empty())
                 {
                     string processID = tokens[1];
                     FrontJob(processID, backJobs);
+                }
+                // CONDITIONAL
+                else if (tokens[0] == SHELL_COMMANDS[10] && tokens[1] == "(" &&
+                         (find(CONDITIONAL_COMMANDS.begin(), CONDITIONAL_COMMANDS.end(), tokens[2]) != CONDITIONAL_COMMANDS.end()) &&
+                         !tokens[3].empty() && tokens[4] == ")")
+                {
+
+                    string conditionalCommand = tokens[2];
+                    string filename = tokens[3];
+                    if (Conditional(conditionalCommand, filename))
+                    {
+                        string fullCommand = ReconstructCommand(tokens, tokenCount);
+                        size_t positionOfCommand = fullCommand.find(") ");
+                        string command = fullCommand.substr(positionOfCommand + 2);
+
+                        tokenCount = TokenizeCommandLine(tokens, command);
+                        ProcessCommand(tokens, tokenCount, history, aliases, backJobs);
+                    }
+                    else
+                    {
+                        printf("NOT VALID");
+                    }
                 }
             }
             // single token commands
@@ -524,9 +547,9 @@ void PrintBackJobs(map<int, vector<string>> &backJobs)
         }
 
         pid_t wpid = waitpid(it->first, &status, WNOHANG);
-        // child has not change status
         if (wpid == 0)
         {
+            // child has not change status, thus still running
             PrintElement("RUNNING");
         }
         // child has succeed
@@ -536,16 +559,14 @@ void PrintBackJobs(map<int, vector<string>> &backJobs)
         }
         else
         {
-            // There is no backjobs
+            // child has completed
             PrintElement("COMPLETE");
-            cout << endl;
-            RemoveFromBackJobs(it->first, backJobs);
         }
         cout
             << endl;
     }
     cout
-            << endl;
+        << endl;
 }
 
 template <typename T>
@@ -598,6 +619,129 @@ void FrontJob(string processID, map<int, vector<string>> &backJobs)
     if (it != backJobs.end())
     {
         wpid = waitpid(it->first, &status, 0);
-        // kill(it->first, SIGCONT);
+
+        if (wpid == -1)
+        {
+            perror("FAILED waitpid:\n");
+        }
     }
+    else
+    {
+        cout << "Process ID doesn't exist" << endl;
+    }
+}
+
+bool Conditional(string conditionalCommand, string filename)
+{
+    if (conditionalCommand == CONDITIONAL_COMMANDS[0])
+    {
+        return CanReadFile(filename);
+    }
+
+    else if (conditionalCommand == CONDITIONAL_COMMANDS[1])
+    {
+        return DoesItExist(filename);
+    }
+
+    else if (conditionalCommand == CONDITIONAL_COMMANDS[2])
+    {
+        return CanExecuteFile(filename);
+    }
+
+    else if (conditionalCommand == CONDITIONAL_COMMANDS[3])
+    {
+        return IsaDirectory(filename);
+    }
+
+    else if (conditionalCommand == CONDITIONAL_COMMANDS[4])
+    {
+        return CanWriteFile(filename);
+    }
+}
+
+bool CanReadFile(string filename)
+{
+    struct stat buffer;
+
+    if (stat(filename.c_str(), &buffer) == -1)
+    {
+        perror("stat");
+        return false;
+    }
+
+    if ((buffer.st_mode & S_IRUSR) == S_IRUSR)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+bool CanWriteFile(string filename)
+{
+    struct stat buffer;
+
+    if (stat(filename.c_str(), &buffer) == -1)
+    {
+        perror("Stat");
+        return false;
+    }
+
+    if ((buffer.st_mode & S_IWUSR) == S_IWUSR)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+bool CanExecuteFile(string filename)
+{
+    struct stat buffer;
+
+    if (stat(filename.c_str(), &buffer) == -1)
+    {
+        perror("Stat");
+        return false;
+    }
+
+    if ((buffer.st_mode & S_IXUSR) == S_IXUSR)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+bool IsaDirectory(string filename)
+{
+    struct stat buffer;
+
+    if (stat(filename.c_str(), &buffer) == -1)
+    {
+        perror("Stat");
+        return false;
+    }
+
+    if (S_ISDIR(buffer.st_mode))
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+bool DoesItExist(string filename)
+{
+    struct stat buffer;
+
+    return (stat(filename.c_str(), &buffer) == 0);
 }
