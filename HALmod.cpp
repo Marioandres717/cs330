@@ -373,7 +373,7 @@ void ReadNewNames(string filename, map<string, string> &aliases)
         {
             ParseAliasFile(tokens, alias);
             pair<map<string, string>::iterator, bool> ret;
-            ret = aliases.insert(pair<string, string>(tokens[0], tokens[1]));
+            AddToAliases(tokens[0], tokens[1], aliases);
         }
     }
 }
