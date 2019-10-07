@@ -33,6 +33,7 @@ const int MAX_NUMBER_OF_BG_PROCESS = 10;
 const string PIPE_OPERATOR = "|";
 const string COMMENT_OPERATOR = "$";
 const string PATH_VARIABLE = "PATH";
+const string BACKGROUND_CHAR = "-";
 const vector<string> TERMINATING_COMMANDS{
     "shutdown",
     "restart",

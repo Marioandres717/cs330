@@ -181,25 +181,36 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
                     FrontJob(processID, backJobs);
                 }
                 // CONDITIONAL
-                else if (tokens[0] == SHELL_COMMANDS[10] && tokens[1] == "(" &&
+                else if ((tokens[0] == SHELL_COMMANDS[10] || tokens[0] == SHELL_COMMANDS[11]) && tokens[1] == "(" &&
                          (find(CONDITIONAL_COMMANDS.begin(), CONDITIONAL_COMMANDS.end(), tokens[2]) != CONDITIONAL_COMMANDS.end()) &&
                          !tokens[3].empty() && tokens[4] == ")")
                 {
 
                     string conditionalCommand = tokens[2];
                     string filename = tokens[3];
-                    if (Conditional(conditionalCommand, filename))
-                    {
-                        string fullCommand = ReconstructCommand(tokens, tokenCount);
-                        size_t positionOfCommand = fullCommand.find(") ");
-                        string command = fullCommand.substr(positionOfCommand + 2);
+                    string fullCommand = ReconstructCommand(tokens, tokenCount);
+                    size_t positionOfCommand = fullCommand.find(") ");
+                    string command = fullCommand.substr(positionOfCommand + 2);
 
-                        tokenCount = TokenizeCommandLine(tokens, command);
-                        ProcessCommand(tokens, tokenCount, history, aliases, backJobs);
+                    // IF COND
+                    if (tokens[0] == SHELL_COMMANDS[10])
+                    {
+                        if (Conditional(conditionalCommand, filename))
+                        {
+
+                            tokenCount = TokenizeCommandLine(tokens, command);
+                            ProcessCommand(tokens, tokenCount, history, aliases, backJobs);
+                        }
                     }
+                    // IF NOTCOND
                     else
                     {
-                        printf("NOT VALID");
+                        if (!Conditional(conditionalCommand, filename))
+                        {
+
+                            tokenCount = TokenizeCommandLine(tokens, command);
+                            ProcessCommand(tokens, tokenCount, history, aliases, backJobs);
+                        }
                     }
                 }
             }
@@ -441,7 +452,7 @@ void OsCommand(string tokens[], int tokenCount, map<int, vector<string>> &backJo
     // Parent Process
     else if (fork_return > 0)
     {
-        if (tokens[tokenCount - 1] != "-")
+        if (tokens[tokenCount - 1] != BACKGROUND_CHAR)
         {
             pid_t wpid;
             while ((wpid = wait(&status)) > 0)
