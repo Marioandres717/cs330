@@ -1,5 +1,4 @@
 #include "HALmod.h"
-#include <cstring>
 
 // Read Command from shell
 int GetCommand(string tokens[], int &commandCounter)
@@ -9,9 +8,9 @@ int GetCommand(string tokens[], int &commandCounter)
 
     do
     {
-        PrintCommandPrompt(commandCounter);
         while (1)
         {
+            PrintCommandPrompt(commandCounter);
             getline(cin, commandLine);
             tokenCount = TokenizeCommandLine(tokens, commandLine);
             if (tokenCount > 0)
@@ -106,7 +105,7 @@ int TokenizeCommandLine(string tokens[], string commandLine)
 }
 
 // Proccess for finding which command to use
-int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map<string, string> &aliases)
+int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map<string, string> &aliases, map<int, vector<string>> &backJobs)
 {
     // check if tokens[0] is a terminating command.
     auto isATerminatingCommand = find(begin(TERMINATING_COMMANDS), end(TERMINATING_COMMANDS), tokens[0]);
@@ -141,7 +140,7 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
                         if (inRange(0, MAX_HISTORY_COMMANDS, index))
                         {
                             tokenCount = TokenizeCommandLine(tokens, history[index]);
-                            ProcessCommand(tokens, tokenCount, history, aliases);
+                            ProcessCommand(tokens, tokenCount, history, aliases, backJobs);
                         }
                     }
                 }
@@ -175,6 +174,45 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
                     string filename = tokens[1];
                     ReadNewNames(filename, aliases);
                 }
+                // FRONTJOB
+                else if (tokens[0] == SHELL_COMMANDS[9] && !tokens[1].empty())
+                {
+                    string processID = tokens[1];
+                    FrontJob(processID, backJobs);
+                }
+                // CONDITIONAL
+                else if ((tokens[0] == SHELL_COMMANDS[10] || tokens[0] == SHELL_COMMANDS[11]) && tokens[1] == "(" &&
+                         (find(CONDITIONAL_COMMANDS.begin(), CONDITIONAL_COMMANDS.end(), tokens[2]) != CONDITIONAL_COMMANDS.end()) &&
+                         !tokens[3].empty() && tokens[4] == ")")
+                {
+
+                    string conditionalCommand = tokens[2];
+                    string filename = tokens[3];
+                    string fullCommand = ReconstructCommand(tokens, tokenCount);
+                    size_t positionOfCommand = fullCommand.find(") ");
+                    string command = fullCommand.substr(positionOfCommand + 2);
+
+                    // IF COND
+                    if (tokens[0] == SHELL_COMMANDS[10])
+                    {
+                        if (Conditional(conditionalCommand, filename))
+                        {
+
+                            tokenCount = TokenizeCommandLine(tokens, command);
+                            ProcessCommand(tokens, tokenCount, history, aliases, backJobs);
+                        }
+                    }
+                    // IF NOTCOND
+                    else
+                    {
+                        if (!Conditional(conditionalCommand, filename))
+                        {
+
+                            tokenCount = TokenizeCommandLine(tokens, command);
+                            ProcessCommand(tokens, tokenCount, history, aliases, backJobs);
+                        }
+                    }
+                }
             }
             // single token commands
             else
@@ -189,6 +227,11 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
                 {
                     PrintAliases(aliases);
                 }
+                // BACKJOBS
+                else if (tokens[0] == SHELL_COMMANDS[8])
+                {
+                    PrintBackJobs(backJobs);
+                }
             }
             return 1;
         }
@@ -198,14 +241,15 @@ int ProcessCommand(string tokens[], int tokenCount, vector<string> &history, map
             // replace alias command;
             string oldName = ReconstructOldName(tokens, tokenCount, aliases);
             tokenCount = TokenizeCommandLine(tokens, oldName);
-            ProcessCommand(tokens, tokenCount, history, aliases);
+            ProcessCommand(tokens, tokenCount, history, aliases, backJobs);
             return 1;
         }
         // OS/linux command
         else
         {
-            string command = ReconstructCommand(tokens, tokenCount);
-            OsCommand(command);
+            if (!tokens[0].empty())
+                OsCommand(tokens, tokenCount, backJobs);
+
             return 1;
         }
     }
@@ -329,7 +373,7 @@ void ReadNewNames(string filename, map<string, string> &aliases)
         {
             ParseAliasFile(tokens, alias);
             pair<map<string, string>::iterator, bool> ret;
-            ret = aliases.insert(pair<string, string>(tokens[0], tokens[1]));
+            AddToAliases(tokens[0], tokens[1], aliases);
         }
     }
 }
@@ -354,10 +398,100 @@ bool CheckIfCommandInAliases(string alias, map<string, string> &aliases)
     return false;
 }
 // passes command entered to the operating system shell
-void OsCommand(string command)
+void OsCommand(string tokens[], int tokenCount, map<int, vector<string>> &backJobs)
 {
-    const char *c = command.c_str();
-    system(c);
+    char *pathAsChars = (char *)malloc(strlen(getenv(PATH_VARIABLE.c_str())) * sizeof(char *) + 1);
+    strcpy(pathAsChars, getenv(PATH_VARIABLE.c_str()));
+    char *currentPath;
+    char *command[tokenCount + 1];
+    int status;
+
+    pid_t fork_return;
+    fork_return = fork();
+
+    // Child Process
+    if (fork_return == 0)
+    {
+        if ((currentPath = strtok(pathAsChars, ":")) != NULL)
+        {
+            while ((currentPath = strtok(NULL, ":")) != NULL)
+            {
+                string filePath = currentPath + (string) "/" + tokens[0];
+                if (access(filePath.c_str(), X_OK) == 0)
+                {
+                    // create array of pointers to c strings. We need this for the execve call
+                    for (int i = 0; i <= tokenCount; i++)
+                    {
+                        if (i == tokenCount)
+                        {
+                            command[i] = NULL;
+                        }
+                        else if (i == (tokenCount - 1) && tokens[tokenCount - 1] == "-")
+                        {
+                            // ignore character "-"
+                            command[i] = NULL;
+                        }
+                        else
+                        {
+                            command[i] = (char *)tokens[i].c_str();
+                        }
+                    }
+                    free(pathAsChars);
+                    execve(filePath.c_str(), command, environ);
+                }
+                else
+                {
+                    continue;
+                }
+            }
+            if (currentPath == NULL)
+            {
+                cout << tokens[0] << ": Command not found" << endl;
+                exit(0);
+            }
+        }
+    }
+    // Parent Process
+    else if (fork_return > 0)
+    {
+        if (tokens[tokenCount - 1] != BACKGROUND_CHAR)
+        {
+            pid_t wpid;
+            while ((wpid = wait(&status)) > 0)
+            {
+                //is a background process
+                if (wpid != fork_return)
+                {
+                    if (WIFEXITED(status))
+                    {
+                        RemoveFromBackJobs(wpid, backJobs);
+                    }
+                }
+                // normal child process
+                else if (wpid == fork_return)
+                {
+                    break;
+                }
+                // Error while waiting child
+                else
+                {
+                    perror("FAILED to waitpid:\n");
+                }
+            }
+        }
+        // Background process
+        else
+        {
+            // add to background jobs
+            AddToBackJobs(tokens, tokenCount, fork_return, backJobs);
+        }
+    }
+    // error when calling fork()
+    else
+    {
+        perror("FAILED to fork:\n");
+        exit(EXIT_FAILURE);
+    }
 }
 // Reconstructs the old command from the alias.
 string ReconstructOldName(string tokens[], int tokenCount, map<string, string> &aliases)
@@ -389,4 +523,238 @@ string ReconstructOldName(string tokens[], int tokenCount, map<string, string> &
         }
     }
     return oldName;
+}
+
+void AddToBackJobs(string tokens[], int tokenCount, int processID, map<int, vector<string>> &backJobs)
+{
+    string command = ReconstructCommand(tokens, tokenCount);
+    string time = ReadableTimestamp();
+    vector<string> temp;
+    temp.push_back(time);
+    temp.push_back(command);
+    pair<map<int, vector<string>>::iterator, bool> ret;
+    ret = backJobs.insert(pair<int, vector<string>>(processID, temp));
+
+    cout << "[" << backJobs.size() << "]  " << processID << endl;
+}
+
+void PrintBackJobs(map<int, vector<string>> &backJobs)
+{
+    map<int, vector<string>>::iterator it;
+    int status;
+
+    string tableHeader[] = {"PID", "TIME", "CMD", "STATUS"};
+
+    for (int i = 0; i < (sizeof(tableHeader) / sizeof(*tableHeader)); i++)
+    {
+        PrintElement(tableHeader[i]);
+    }
+    cout << endl;
+    for (it = backJobs.begin(); it != backJobs.end(); ++it)
+    {
+        PrintElement(it->first);
+        for (int i = 0; i < it->second.size(); i++)
+        {
+
+            PrintElement(it->second[i]);
+        }
+
+        pid_t wpid = waitpid(it->first, &status, WNOHANG);
+        if (wpid == 0)
+        {
+            // child has not change status, thus still running
+            PrintElement("RUNNING");
+        }
+        // child has succeed
+        else if (wpid > 0)
+        {
+            PrintElement("COMPLETE");
+        }
+        else
+        {
+            // child has completed
+            PrintElement("COMPLETE");
+        }
+        cout
+            << endl;
+    }
+    cout
+        << endl;
+}
+
+template <typename T>
+void PrintElement(T t)
+{
+    int width = 10;
+    char separator = ' ';
+    cout << left << setw(width) << setfill(separator) << t;
+}
+
+string ReadableTimestamp()
+{
+    time_t rawtime;
+    struct tm *timeinfo;
+    char buffer[80];
+
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    strftime(buffer, sizeof(buffer), "%H:%M:%S", timeinfo);
+    std::string str(buffer);
+
+    return str;
+}
+
+void RemoveFromBackJobs(int processID, map<int, vector<string>> &backJobs)
+{
+    map<int, vector<string>>::iterator it;
+    it = backJobs.find(processID);
+    if (it != backJobs.end())
+    {
+        cout << "[" << it->first << "]     "
+             << "DONE       " << it->second[1] << endl;
+        backJobs.erase(processID);
+    }
+}
+
+void FrontJob(string processID, map<int, vector<string>> &backJobs)
+{
+    int pid;
+    size_t sz;
+
+    // convert token string to int
+    pid = stoi(processID, &sz);
+
+    map<int, vector<string>>::iterator it;
+    it = backJobs.find(pid);
+    pid_t wpid;
+    int status;
+    if (it != backJobs.end())
+    {
+        wpid = waitpid(it->first, &status, 0);
+
+        if (wpid == -1)
+        {
+            perror("FAILED waitpid:\n");
+        }
+    }
+    else
+    {
+        cout << "Process ID doesn't exist" << endl;
+    }
+}
+
+bool Conditional(string conditionalCommand, string filename)
+{
+    if (conditionalCommand == CONDITIONAL_COMMANDS[0])
+    {
+        return CanReadFile(filename);
+    }
+
+    else if (conditionalCommand == CONDITIONAL_COMMANDS[1])
+    {
+        return DoesItExist(filename);
+    }
+
+    else if (conditionalCommand == CONDITIONAL_COMMANDS[2])
+    {
+        return CanExecuteFile(filename);
+    }
+
+    else if (conditionalCommand == CONDITIONAL_COMMANDS[3])
+    {
+        return IsaDirectory(filename);
+    }
+
+    else if (conditionalCommand == CONDITIONAL_COMMANDS[4])
+    {
+        return CanWriteFile(filename);
+    }
+}
+
+bool CanReadFile(string filename)
+{
+    struct stat buffer;
+
+    if (stat(filename.c_str(), &buffer) == -1)
+    {
+        perror("stat");
+        return false;
+    }
+
+    if ((buffer.st_mode & S_IRUSR) == S_IRUSR)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+bool CanWriteFile(string filename)
+{
+    struct stat buffer;
+
+    if (stat(filename.c_str(), &buffer) == -1)
+    {
+        perror("Stat");
+        return false;
+    }
+
+    if ((buffer.st_mode & S_IWUSR) == S_IWUSR)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+bool CanExecuteFile(string filename)
+{
+    struct stat buffer;
+
+    if (stat(filename.c_str(), &buffer) == -1)
+    {
+        perror("Stat");
+        return false;
+    }
+
+    if ((buffer.st_mode & S_IXUSR) == S_IXUSR)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+bool IsaDirectory(string filename)
+{
+    struct stat buffer;
+
+    if (stat(filename.c_str(), &buffer) == -1)
+    {
+        perror("Stat");
+        return false;
+    }
+
+    if (S_ISDIR(buffer.st_mode))
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+bool DoesItExist(string filename)
+{
+    struct stat buffer;
+
+    return (stat(filename.c_str(), &buffer) == 0);
 }
